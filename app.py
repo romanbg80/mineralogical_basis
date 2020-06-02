@@ -3,10 +3,17 @@ from tkinter import ttk             # set of widgets
 from PIL import Image, ImageTk      # inserting pictures
 
 
-class MainWindow(tk.Tk):
+class MineralogicalBasis(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Mineralogical basis")
+        MainWindow(self).grid()
+
+
+class MainWindow(ttk.Frame):
+    def __init__(self, container):
+        super().__init__(container)
+
 
         headline_frame = ttk.Frame(padding=(20, 10, 20, 10))
         headline_frame.grid(row=0, column=0)
@@ -21,18 +28,18 @@ class MainWindow(tk.Tk):
         login_button = ttk.Button(input_frame, text="Login", command=self.login)
         login_button.grid(row=1, column=4)
 
-        username = tk.StringVar()
-        userpassword = tk.StringVar()
+        self.username = tk.StringVar()
+        self.userpassword = tk.StringVar()
 
         username_label = ttk.Label(input_frame, text="Username: ")
         username_label.grid(row=1, column=0, padx=(0, 10))
-        username_entry = ttk.Entry(input_frame, width=15, textvariable=username)
+        username_entry = ttk.Entry(input_frame, width=15, textvariable=self.username)
         username_entry.grid(row=1, column=1)
         username_entry.focus()
 
         userpassword_label = ttk.Label(input_frame, text="User Password: ")
         userpassword_label.grid(row=1, column=2, padx=(0, 10))
-        userpassword_entry = ttk.Entry(input_frame, width=15, textvariable=userpassword)
+        userpassword_entry = ttk.Entry(input_frame, width=15, textvariable=self.userpassword)
         userpassword_entry.grid(row=1, column=3)
 
         buttons_frame = ttk.Frame(padding=(20, 10))
@@ -56,19 +63,13 @@ class MainWindow(tk.Tk):
 
         print(f"Użytkownik, {username.get()  or 'trzeba dodać'}")
 
-
-
-
-
     def options(self):
         print("przycisk podłączony do funkcji")
-
-
 
 
 class DatabaseContentFrame(ttk.Frame):
     pass
 
 
-root = MainWindow()
+root = MineralogicalBasis()
 root.mainloop()
