@@ -12,22 +12,28 @@ class MineralogicalBasis(tk.Tk):
         container = ttk.Frame(self)
         container.grid(padx=60, pady=30, sticky="EW")
 
-        main_frame = MainWindow(container, self)
-        main_frame.grid(row=0, column=0, sticky="NSEW")
+        #main_frame = MainWindow(container, self)
+        #main_frame.grid(row=0, column=0, sticky="NSEW")
 
-        options_to_main = Options(container, self)
-        options_to_main.grid(row=0, column=0, sticky="NSEW")
+        #options_to_main = Options(container, self)
+        #options_to_main.grid(row=0, column=0, sticky="NSEW")
 
-        self.frames[MainWindow] = main_frame
-        self.frames[Options] = options_to_main
+        #self.frames[MainWindow] = main_frame
+        #self.frames[Options] = options_to_main
 
-        
+        for FrameClass in (MainWindow, Options):
+            frame = FrameClass(container, self)
+            self.frames[FrameClass] = frame
+            frame.grid(row=0, column=0, sticky="NSEW")
 
-        #self.bind("<Return>", frame.show_options)
-        #self.bind("<KP_Enter>", frame.show_options)
+        self.show_frame(MainWindow)
+
+
 
     def show_frame(self, container):
         frame = self.frames[container]
+        #self.bind("<Return>", frame.show_options)
+        #self.bind("<KP_Enter>", frame.show_options)
         frame.tkraise()
 
 
