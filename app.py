@@ -7,13 +7,32 @@ class MineralogicalBasis(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title("Mineralogical basis")
+        self.frames = dict()
 
-        frame = MainWindow(self, padding=(60, 30))
-        frame.grid()
+        container = ttk.Frame(self)
+        container.grid(padx=60, pady=30, sticky="EW")
+
+        main_frame = MainWindow(container, self)
+        main_frame.grid(row=0, column=0, sticky="NSEW")
+
+        options_to_main = Options(container, self)
+        options_to_main.grid(row=0, column=0, sticky="NSEW")
+
+        self.frames[MainWindow] = main_frame
+        self.frames[Options] = options_to_main
+
+        
+
+        #self.bind("<Return>", frame.show_options)
+        #self.bind("<KP_Enter>", frame.show_options)
+
+    def show_frame(self, container):
+        frame = self.frames[container]
+        frame.tkraise()
 
 
 class MainWindow(ttk.Frame):
-    def __init__(self, container, **kwargs):
+    def __init__(self, container, controller, **kwargs):
         super().__init__(container, **kwargs)
 
         self.username = tk.StringVar()
@@ -25,7 +44,7 @@ class MainWindow(ttk.Frame):
         userpassword_label = ttk.Label(self, text="User Password: ")
         userpassword_entry = ttk.Entry(self, width=15, textvariable=self.userpassword)
         login_button = ttk.Button(self, text="Login", command=self.login)
-        option_button = ttk.Button(self, text="Dostepne opcje", command=self.options)
+        option_button = ttk.Button(self, text="Dostepne opcje", command=lambda: controller.show_frame(Options))
         quit_button = ttk.Button(self, text="Wyjdź z aplikacji", command=self.destroy)
 
         image = ttk.Label(self)
@@ -57,12 +76,23 @@ class MainWindow(ttk.Frame):
         except ValueError:
             pass
 
-    def options(self):
+    def show_options(self):
         print("przycisk podłączony do funkcji")
 
 
-class DatabaseContentFrame(ttk.Frame):
-    pass
+class Options(ttk.Frame):
+    def __init__(self, container, controller, **kwargs):
+        super().__init__(container, **kwargs)
+
+        option1_label = ttk.Label(self, text="Opcja numer 1")
+        option1_button = ttk.Button(self, text="Wykonaj opcje 1")
+        option1_label.grid(column=0, row=0, sticky="W")
+        option1_button.grid(column=1, row=0, sticky="EW")
+
+        to_main_label = ttk.Label(self, text="Powrót do strony głównej")
+        to_main_button = ttk.Button(self, text="Powróć", command=lambda: controller.show_frame(MainWindow))
+        to_main_label.grid(column=0, row=1, sticky="W")
+        to_main_button.grid(column=0, row=1, sticky="EW")
 
 
 root = MineralogicalBasis()
