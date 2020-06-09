@@ -20,8 +20,6 @@ class MineralogicalBasis(tk.Tk):
 
         self.show_frame(MainWindow)
 
-
-
     def show_frame(self, container):
         frame = self.frames[container]
         #self.bind("<Return>", frame.show_options)
@@ -85,6 +83,7 @@ class Options(ttk.Frame):
         super().__init__(container, **kwargs)
         self.conn = ConnectionConfig().connection()
         self.c = self.conn.cursor()
+        self.conn.autocommit(True)
 
         self.nazwa_pol = tk.StringVar()
         self.nazwa_ang = tk.StringVar()
@@ -169,15 +168,40 @@ class Options(ttk.Frame):
                         self.system.get(), self.a_axis.get(), self.b_axis.get(), self.c_axis.get(),
                         self.alpha.get(), self.beta.get(), self.gamma.get(), self.z_number.get(), self.code.get()))
 
+        self.conn.close()
 
 
 class ShowDatabase(ttk.Frame):
     def __init__(self, container, controller, **kwargs):
         super().__init__(container, **kwargs)
+        self.conn = ConnectionConfig().connection()
+        self.c = self.conn.cursor()
+        self.conn.autocommit(True)
+
+        self.records = tk.StringVar()
+
+        self.print_records = ''
 
         to_main_button = ttk.Button(self, text="Powrót do strony głównej",
                                     command=lambda: controller.show_frame(MainWindow))
         to_main_button.grid(column=1, row=1, sticky="EW")
+        records_button = ttk.Button(self, text="Wyswietl wpisy", command=self.showrecords)
+        records_button.grid(column=0, row=1)
+        records_display = ttk.Label(self, textvariable=self.records)
+        records_display.grid(column=0, row=2)
+
+    def showrecords(self):
+        self.c.execute("SELECT id, name_pol, name_ang, formula, code FROM minerals_list_vials")
+        self.records = self.c.fetchall()       #
+        print(self.records)
+
+        for record in self.records:
+            self.print_records += str(record) + "\n"
+
+        query_label = ttk.Label(self, text=self.print_records)
+        query_label.grid(column=0, row=3)
+
+        self.conn.close()
 
 
 root = MineralogicalBasis()
