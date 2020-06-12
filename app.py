@@ -4,6 +4,8 @@ from PIL import Image, ImageTk                      # inserting pictures
 from config.ConnectSQL import ConnectionConfig      # connect to database
 from tkinter import messagebox                      # wyskakujące okienko
 #from tkinter import filedialog                      # do otwierania plików
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 class MineralogicalBasis(tk.Tk):
@@ -20,7 +22,7 @@ class MineralogicalBasis(tk.Tk):
         container = ttk.Frame(self)
         container.grid(padx=60, pady=30, sticky="EW")
 
-        for FrameClass in (MainWindow, Options, ShowDatabase, DeleteRecord, ImproveRecord):
+        for FrameClass in (MainWindow, Options, ShowDatabase, DeleteRecord, ImproveRecord, GraphWizzard):
             frame = FrameClass(container, self)
             self.frames[FrameClass] = frame
             frame.grid(row=0, column=0, sticky="NSEW")
@@ -54,6 +56,7 @@ class MainWindow(ttk.Frame):
         improve_record_button = ttk.Button(self, text="Popraw wpis w bazie",
                                            command=lambda: controller.show_frame(ImproveRecord))
         quit_button = ttk.Button(self, text="Wyjdź z aplikacji", command=self.quit)         # quit "a nie" destroy
+        graphs_button = ttk.Button(self, text="Rysowanie wykresów", command=lambda: controller.show_frame(GraphWizzard))
 
         headline.grid(column=0, row=0, )
         username_label.grid(column=0, row=1, sticky="W")
@@ -68,6 +71,7 @@ class MainWindow(ttk.Frame):
         improve_record_button.grid(column=2, row=2)
         del_record_button.grid(column=3, row=2)
         quit_button.grid(column=4, row=2)
+        graphs_button.grid(column=0, row=3)
 
         # obrazki znaczków pocztowych
         self.my_img = ImageTk.PhotoImage(Image.open('znaczki.jpg'))
@@ -366,6 +370,23 @@ class ImproveRecord(ttk.Frame):
                         self.c_axis_edit.get(), self.alpha_edit.get(), self.beta_edit.get(), self.gamma_edit.get(),
                         self.z_number_edit.get(), self.code_edit.get(), self.id_to_improve.get()))
         self.conn.close()
+
+
+class GraphWizzard(ttk.Frame):
+    def __init__(self, container, controller, **kwargs):
+        super().__init__(container, **kwargs)
+
+        to_main_button = ttk.Button(self, text="Powrót do strony głównej",
+                                    command=lambda: controller.show_frame(MainWindow))
+        to_main_button.grid(column=0, row=8, sticky="EW")
+
+        test_graph_button = ttk.Button(self, text='wykres testowy', command=self.testGraph)
+        test_graph_button.grid(column=0, row=0)
+
+    def testGraph(self):
+        house_prices = np.random.normal(200000, 25000, 5000)
+        plt.hist(house_prices, 50)
+        plt.show()
 
 
 root = MineralogicalBasis()
