@@ -2,18 +2,25 @@ import tkinter as tk
 from tkinter import ttk                             # set of widgets
 from PIL import Image, ImageTk                      # inserting pictures
 from config.ConnectSQL import ConnectionConfig      # connect to database
+from tkinter import messagebox                      # wyskakujące okienko
+#from tkinter import filedialog                      # do otwierania plików
 
 
 class MineralogicalBasis(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title("Mineralogical basis")
+
+        #self.conn = ConnectionConfig().connection()
+        #self.c = self.conn.cursor()
+        #self.conn.autocommit(True)
+
         self.frames = dict()
 
         container = ttk.Frame(self)
         container.grid(padx=60, pady=30, sticky="EW")
 
-        for FrameClass in (MainWindow, Options, ShowDatabase):
+        for FrameClass in (MainWindow, Options, ShowDatabase, DeleteRecord, ImproveRecord):
             frame = FrameClass(container, self)
             self.frames[FrameClass] = frame
             frame.grid(row=0, column=0, sticky="NSEW")
@@ -42,9 +49,11 @@ class MainWindow(ttk.Frame):
         login_button = ttk.Button(self, text="Login", command=self.login)
         option_button = ttk.Button(self, text="Dodaj nowy wpis", command=lambda: controller.show_frame(Options))
         database_button = ttk.Button(self, text="Lista minerałów", command=lambda: controller.show_frame(ShowDatabase))
-        quit_button = ttk.Button(self, text="Wyjdź z aplikacji", command=self.destroy)
-
-        image = ttk.Label(self)
+        del_record_button = ttk.Button(self, text="Usuń wpis z bazy",
+                                       command=lambda: controller.show_frame(DeleteRecord))
+        improve_record_button = ttk.Button(self, text="Popraw wpis w bazie",
+                                           command=lambda: controller.show_frame(ImproveRecord))
+        quit_button = ttk.Button(self, text="Wyjdź z aplikacji", command=self.quit)         # quit "a nie" destroy
 
         headline.grid(column=0, row=0, )
         username_label.grid(column=0, row=1, sticky="W")
@@ -56,14 +65,14 @@ class MainWindow(ttk.Frame):
         login_button.grid(column=4, row=1)
         option_button.grid(column=0, row=2)
         database_button.grid(column=1, row=2)
-        quit_button.grid(column=2, row=2)
+        improve_record_button.grid(column=2, row=2)
+        del_record_button.grid(column=3, row=2)
+        quit_button.grid(column=4, row=2)
 
-        # jeszcze nie działa jak powinno
-        image.grid(row=3, column=5)
-        image_1 = Image.open('znaczki.jpg')
-        photo_1 = ImageTk.PhotoImage(image_1)
-        label = ttk.Label(image, image=photo_1, padding=5)
-        label.grid(row=3, column=5)
+        # obrazki znaczków pocztowych
+        self.my_img = ImageTk.PhotoImage(Image.open('znaczki.jpg'))
+        img_label = ttk.Label(image=self.my_img)
+        img_label.grid(row=0, column=5)
 
         for child in self.winfo_children():
             child.grid_configure(padx=15, pady=15)
@@ -99,9 +108,9 @@ class Options(ttk.Frame):
         self.z_number = tk.StringVar()
         self.code = tk.StringVar()
 
-        name_pol_label = ttk.Label(self, width=20, text="nazwa polska")
-        name_ang_label = ttk.Label(self, width=20, text="nazwa angielska")
-        formula_label = ttk.Label(self, width=20, text="formuła")
+        name_pol_label = ttk.Label(self, width=20, text="nazwa polska *")
+        name_ang_label = ttk.Label(self, width=20, text="nazwa angielska *")
+        formula_label = ttk.Label(self, width=20, text="formuła *")
         group_label = ttk.Label(self, width=20, text='grupa przestrzenna')
         system_label = ttk.Label(self, width=20, text='układ krystalograficzny')
         a_label = ttk.Label(self, width=20, text="a")
@@ -111,7 +120,8 @@ class Options(ttk.Frame):
         beta_label = ttk.Label(self, width=20, text="beta")
         gamma_label = ttk.Label(self, width=20, text="gamma")
         z_number_label = ttk.Label(self, width=20, text="Z number")
-        code_label = ttk.Label(self, width=20, text="code")
+        code_label = ttk.Label(self, width=20, text="code *")
+        mandatory_label = ttk.Label(self, text="* pola obowiązkowe do wypełnienia")
 
         name_pol_entry = ttk.Entry(self, width=15, textvariable=self.nazwa_pol)
         name_ang_entry = ttk.Entry(self, width=15, textvariable=self.nazwa_ang)
@@ -153,16 +163,17 @@ class Options(ttk.Frame):
         code_label.grid(row=4, column=1)
         z_number_entry.grid(row=5, column=0)
         code_entry.grid(row=5, column=1)
+        mandatory_label.grid(row=6, column=0)
 
         option1_button = ttk.Button(self, text="Dodaj", command=self.addToDatabase)
-        option1_button.grid(column=0, row=6, sticky="EW")
+        option1_button.grid(column=0, row=7, sticky="EW")
 
         to_main_button = ttk.Button(self, text="Powrót do strony głównej",
                                     command=lambda: controller.show_frame(MainWindow))
-        to_main_button.grid(column=0, row=7, sticky="EW")
+        to_main_button.grid(column=0, row=8, sticky="EW")
 
     def addToDatabase(self):
-        print("Podłączony")
+        #print("Podłączony")
         self.c.execute("INSERT INTO minerals_list_vials VALUES (default, %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                        (self.nazwa_pol.get(), self.nazwa_ang.get(), self.formula.get(), self.group.get(),
                         self.system.get(), self.a_axis.get(), self.b_axis.get(), self.c_axis.get(),
@@ -201,6 +212,159 @@ class ShowDatabase(ttk.Frame):
         query_label = ttk.Label(self, text=self.print_records)
         query_label.grid(column=0, row=3)
 
+        self.conn.close()
+
+
+class DeleteRecord(ttk.Frame):
+    def __init__(self, container, controller, **kwargs):
+        super().__init__(container, **kwargs)
+        self.conn = ConnectionConfig().connection()
+        self.c = self.conn.cursor()
+        self.conn.autocommit(True)
+
+        self.id_to_delete = tk.StringVar()
+
+        to_main_button = ttk.Button(self, text="Powrót do strony głównej",
+                                    command=lambda: controller.show_frame(MainWindow))
+        to_main_button.grid(column=4, row=1, sticky="EW")
+
+        select_record_label = ttk.Label(self, text="Nr Id wpisu do usunięcia")
+        select_record_enter = ttk.Entry(self, width=15, textvariable=self.id_to_delete)
+        delete_button = ttk.Button(self, text="Usuń wpis", command=self.deleteRecord)
+        select_record_label.grid(column=0, row=0)
+        select_record_enter.grid(column=0, row=1)
+        delete_button.grid(column=0, row=3)
+
+    def deleteRecord(self):
+
+        self.c.execute("DELETE from minerals_list_vials WHERE id= %s", (self.id_to_delete.get()))
+        self.conn.close()
+        # showinfo, showwarning, showerror, askquestion, askokcancel, askyesno
+
+        messagebox.showwarning("Usunięcie wpisu z bazy danych", "Wpis o podanym Id został usuniety")
+
+
+class ImproveRecord(ttk.Frame):
+    def __init__(self, container, controller, **kwargs):
+        super().__init__(container, **kwargs)
+        self.conn = ConnectionConfig().connection()
+        self.c = self.conn.cursor()
+        self.conn.autocommit(True)
+
+        self.id_to_improve = tk.StringVar()
+        self.nazwa_pol_edit = tk.StringVar()
+        self.nazwa_ang_edit = tk.StringVar()
+        self.formula_edit = tk.StringVar()
+        self.group_edit = tk.StringVar()
+        self.system_edit = tk.StringVar()
+        self.a_axis_edit = tk.StringVar()
+        self.b_axis_edit = tk.StringVar()
+        self.c_axis_edit = tk.StringVar()
+        self.alpha_edit = tk.StringVar()
+        self.beta_edit = tk.StringVar()
+        self.gamma_edit = tk.StringVar()
+        self.z_number_edit = tk.StringVar()
+        self.code_edit = tk.StringVar()
+
+        name_pol_label_edit = ttk.Label(self, width=20, text="nazwa polska *")
+        name_ang_label_edit = ttk.Label(self, width=20, text="nazwa angielska *")
+        formula_label_edit = ttk.Label(self, width=20, text="formuła *")
+        group_label_edit = ttk.Label(self, width=20, text='grupa przestrzenna')
+        system_label_edit = ttk.Label(self, width=20, text='układ krystalograficzny')
+        a_label_edit = ttk.Label(self, width=20, text="a")
+        b_label_edit = ttk.Label(self, width=20, text="b")
+        c_label_edit = ttk.Label(self, width=20, text="c")
+        alpha_label_edit = ttk.Label(self, width=20, text="alpha")
+        beta_label_edit = ttk.Label(self, width=20, text="beta")
+        gamma_label_edit = ttk.Label(self, width=20, text="gamma")
+        z_number_label_edit = ttk.Label(self, width=20, text="Z number")
+        code_label_edit = ttk.Label(self, width=20, text="code *")
+        mandatory_label_edit = ttk.Label(self, text="* pola obowiązkowe do wypełnienia")
+
+        self.name_pol_entry_edit = ttk.Entry(self, width=15, textvariable=self.nazwa_pol_edit)
+        self.name_ang_entry_edit = ttk.Entry(self, width=15, textvariable=self.nazwa_ang_edit)
+        self.formula_entry_edit = ttk.Entry(self, width=15, textvariable=self.formula_edit)
+        self.group_entry_edit = ttk.Entry(self, width=15, textvariable=self.group_edit)
+        self.system_entry_edit = ttk.Entry(self, width=15, textvariable=self.system_edit)
+        self.a_entry_edit = ttk.Entry(self, width=15, textvariable=self.a_axis_edit)
+        self.b_entry_edit = ttk.Entry(self, width=15, textvariable=self.b_axis_edit)
+        self.c_entry_edit = ttk.Entry(self, width=15, textvariable=self.c_axis_edit)
+        self.alpha_entry_edit = ttk.Entry(self, width=15, textvariable=self.alpha_edit)
+        self.beta_entry_edit = ttk.Entry(self, width=15, textvariable=self.beta_edit)
+        self.gamma_entry_edit = ttk.Entry(self, width=15, textvariable=self.gamma_edit)
+        self.z_number_entry_edit = ttk.Entry(self, width=15, textvariable=self.z_number_edit)
+        self.code_entry_edit = ttk.Entry(self, width=15, textvariable=self.code_edit)
+
+        name_pol_label_edit.grid(row=1, column=0)
+        name_ang_label_edit.grid(row=1, column=1)
+        formula_label_edit.grid(row=1, column=2)
+        group_label_edit.grid(row=1, column=3)
+        system_label_edit.grid(row=1, column=4)
+        self.name_pol_entry_edit.grid(row=2, column=0)
+        self.name_ang_entry_edit.grid(row=2, column=1)
+        self.formula_entry_edit.grid(row=2, column=2)
+        self.group_entry_edit.grid(row=2, column=3)
+        self.system_entry_edit.grid(row=2, column=4)
+        a_label_edit.grid(row=3, column=0)
+        b_label_edit.grid(row=3, column=1)
+        c_label_edit.grid(row=3, column=2)
+        alpha_label_edit.grid(row=3, column=3)
+        beta_label_edit.grid(row=3, column=4)
+        gamma_label_edit.grid(row=3, column=5)
+        self.a_entry_edit.grid(row=4, column=0)
+        self.b_entry_edit.grid(row=4, column=1)
+        self.c_entry_edit.grid(row=4, column=2)
+        self.alpha_entry_edit.grid(row=4, column=3)
+        self.beta_entry_edit.grid(row=4, column=4)
+        self.gamma_entry_edit.grid(row=4, column=5)
+        z_number_label_edit.grid(row=5, column=0)
+        code_label_edit.grid(row=5, column=1)
+        self.z_number_entry_edit.grid(row=6, column=0)
+        self.code_entry_edit.grid(row=6, column=1)
+        mandatory_label_edit.grid(row=7, column=0)
+
+        to_main_button = ttk.Button(self, text="Powrót do strony głównej",
+                                    command=lambda: controller.show_frame(MainWindow))
+        to_main_button.grid(column=4, row=8, sticky="EW")
+
+        select_record_label = ttk.Label(self, text="Nr Id wpisu do poprawienia")
+        select_record_enter = ttk.Entry(self, width=15, textvariable=self.id_to_improve)
+        show_data_button = ttk.Button(self, text="Pokaż dane dla tego Id", command=self.showDataForId)
+        show_data_button.grid(column=2, row=0)
+        improve_button = ttk.Button(self, text="Popraw wpis", command=self.improveRecord)
+        select_record_label.grid(column=0, row=0)
+        select_record_enter.grid(column=1, row=0)
+        improve_button.grid(column=0, row=8)
+        quit_button = ttk.Button(self, text="Wyjdź z aplikacji", command=self.quit)
+        quit_button.grid(column=4, row=9)
+
+    def showDataForId(self):
+        self.c.execute("SELECT * from minerals_list_vials WHERE id= %s", (self.id_to_improve.get()))
+        records = self.c.fetchall()
+        for record in records:
+            self.name_pol_entry_edit.insert(0, record[1])
+            self.name_ang_entry_edit.insert(0, record[2])
+            self.formula_entry_edit.insert(0, record[3])
+            self.group_entry_edit.insert(0, record[4])
+            self.system_entry_edit.insert(0, record[5])
+            self.a_entry_edit.insert(0, record[6])
+            self.b_entry_edit.insert(0, record[7])
+            self.c_entry_edit.insert(0, record[8])
+            self.alpha_entry_edit.insert(0, record[9])
+            self.beta_entry_edit.insert(0, record[10])
+            self.gamma_entry_edit.insert(0, record[11])
+            self.z_number_entry_edit.insert(0, record[12])
+            self.code_entry_edit.insert(0, record[13])
+        self.conn.close()
+
+    def improveRecord(self):
+        self.c.execute("""UPDATE minerals_list_vials SET (name_pol = %s, name_ang = %s, formula = %s,
+                        crystal_system = %s, space_group = %s, a_axis = %s, b_axis = %s, c_axis = %s,
+                        alpha = %s, beta = %s, gamma = %s, Z_number = %s, code = %s = ) WHERE id = %s""",
+                       (self.nazwa_pol_edit.get(), self.nazwa_ang_edit.get(), self.formula_edit.get(),
+                        self.group_edit.get(), self.system_edit.get(), self.a_axis_edit.get(), self.b_axis_edit.get(),
+                        self.c_axis_edit.get(), self.alpha_edit.get(), self.beta_edit.get(), self.gamma_edit.get(),
+                        self.z_number_edit.get(), self.code_edit.get(), self.id_to_improve.get()))
         self.conn.close()
 
 
