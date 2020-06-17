@@ -3,7 +3,7 @@ from tkinter import ttk                             # set of widgets
 from PIL import Image, ImageTk                      # inserting pictures
 from config.ConnectSQL import ConnectionConfig      # connect to database
 from tkinter import messagebox                      # wyskakujące okienko
-#from tkinter import filedialog                      # do otwierania plików
+from tkinter import filedialog as fd                # do otwierania plików
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -382,6 +382,26 @@ class GraphWizzard(ttk.Frame):
 
         test_graph_button = ttk.Button(self, text='wykres testowy', command=self.testGraph)
         test_graph_button.grid(column=0, row=0)
+
+        ruby_cheap_label = ttk.Label(self, text="wykres pomiaru cisnienia")
+        ruby_cheap_button = ttk.Button(self, text='otwórz plik', command=self.open_file)
+        ruby_cheap_label.grid(column=0, row=1)
+        ruby_cheap_button.grid(column=1, row=1)
+
+        #self.text = tk.Text(self)
+
+    def open_file(self):
+        filename = fd.askopenfilename(initialdir="/home/Documents/mineralogical_basis/pressure_charts/",
+                                           title="Select a file",
+                                           filetypes=(("txt files", "*.txt"), ("all files", "*.*")))
+        if filename is not None:
+            with open(filename, "r", -1, "utf-8") as file:
+                print(file.read())
+
+
+
+
+
 
     def testGraph(self):
         house_prices = np.random.normal(200000, 25000, 5000)
