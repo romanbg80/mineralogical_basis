@@ -388,6 +388,7 @@ class GraphWizzard(ttk.Frame):
         plt.hist(house_prices, 50)
         plt.show()
 
+# CRM - Customer Ralationship Management
 
 root = MineralogicalBasis()
 root.mainloop()
