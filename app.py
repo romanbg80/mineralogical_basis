@@ -6,6 +6,7 @@ from tkinter import messagebox                      # wyskakujące okienko
 from tkinter import filedialog as fd                # do otwierania plików
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 class MineralogicalBasis(tk.Tk):
@@ -376,6 +377,8 @@ class GraphWizzard(ttk.Frame):
     def __init__(self, container, controller, **kwargs):
         super().__init__(container, **kwargs)
 
+        self.pressure_value = tk.StringVar()
+
         to_main_button = ttk.Button(self, text="Powrót do strony głównej",
                                     command=lambda: controller.show_frame(MainWindow))
         to_main_button.grid(column=0, row=8, sticky="EW")
@@ -388,20 +391,49 @@ class GraphWizzard(ttk.Frame):
         ruby_cheap_label.grid(column=0, row=1)
         ruby_cheap_button.grid(column=1, row=1)
 
-        #self.text = tk.Text(self)
+        calculate_pressure_button = ttk.Button(self, text="Calculate pressure",
+                                               command=self.calibration_equation)
+        calculate_pressure_button.grid(column=2, row=1)
+        calculate_pressure_label = ttk.Label(self, text="Cisnienie [GPa]")
+        calculate_pressure_label.grid(column=3, row=0)
+        calculate_pressure_display = ttk.Label(self, text="Value shown here", textvariable=self.pressure_value)
+        calculate_pressure_display.grid(column=3, row=1)
+
+
+
 
     def open_file(self):
         filename = fd.askopenfilename(initialdir="/home/Documents/mineralogical_basis/pressure_charts/",
                                            title="Select a file",
                                            filetypes=(("txt files", "*.txt"), ("all files", "*.*")))
-        if filename is not None:
-            with open(filename, "r", -1, "utf-8") as file:
-                print(file.read())
 
+        # nie otwiera sie właściwy podkatalog
 
+        data = pd.read_csv(filename, sep="\t", header=None, skiprows=17, error_bad_lines=False,
+                           names=["nanometers", "intensity"])
+        print(data.head())
+        data.plot(kind='scatter', x='nanometers', y='intensity', color='blue')
+        #plt.xlim([680, 710])   #limit chyba nie działa
+        #plt.show()
+        # plt.savefig("pressure.png")
 
+        er_one = data[data['intensity'] == data['intensity'].max()]
+        print(er_one)
 
+        self.er_two = data.loc[data['intensity'].idxmax()]
+        print(self.er_two[0])
+        self.data_source = float(self.er_two[0])
+        #print(self.data_source.type())
 
+        return self.data_source
+
+    def calibration_equation(self):
+        const_a = 1876.0
+        const_b = 10.71
+        lambda_zero = 694.24
+        pressure = (const_a / const_b) * (((self.data_source/lambda_zero) ** const_b) - 1)
+        self.pressure_value.set(f"{pressure:.3f}")
+        print(round(pressure, 2))
 
     def testGraph(self):
         house_prices = np.random.normal(200000, 25000, 5000)
