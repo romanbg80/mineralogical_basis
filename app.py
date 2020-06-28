@@ -23,7 +23,8 @@ class MineralogicalBasis(tk.Tk):
         container = ttk.Frame(self)
         container.grid(padx=60, pady=30, sticky="EW")
 
-        for FrameClass in (MainWindow, Options, ShowDatabase, DeleteRecord, ImproveRecord, GraphWizzard):
+        for FrameClass in (MainWindow, Options, ShowDatabase, DeleteRecord, ImproveRecord, GraphWizzard,
+                           SearchForRecords):
             frame = FrameClass(container, self)
             self.frames[FrameClass] = frame
             frame.grid(row=0, column=0, sticky="NSEW")
@@ -58,6 +59,7 @@ class MainWindow(ttk.Frame):
                                            command=lambda: controller.show_frame(ImproveRecord))
         quit_button = ttk.Button(self, text="Wyjdź z aplikacji", command=self.quit)         # quit "a nie" destroy
         graphs_button = ttk.Button(self, text="Rysowanie wykresów", command=lambda: controller.show_frame(GraphWizzard))
+        search_button = ttk.Button(self, text="Wyszukaj w bazie", command=lambda: controller.show_frame(SearchForRecords))
 
         headline.grid(column=0, row=0, )
         username_label.grid(column=0, row=1, sticky="W")
@@ -73,6 +75,7 @@ class MainWindow(ttk.Frame):
         del_record_button.grid(column=3, row=2)
         quit_button.grid(column=4, row=2)
         graphs_button.grid(column=0, row=3)
+        search_button.grid(column=1, row=3)
 
         # obrazki znaczków pocztowych
         self.my_img = ImageTk.PhotoImage(Image.open('znaczki.jpg'))
@@ -399,9 +402,6 @@ class GraphWizzard(ttk.Frame):
         calculate_pressure_display = ttk.Label(self, text="Value shown here", textvariable=self.pressure_value)
         calculate_pressure_display.grid(column=3, row=1)
 
-
-
-
     def open_file(self):
         filename = fd.askopenfilename(initialdir="/home/Documents/mineralogical_basis/pressure_charts/",
                                            title="Select a file",
@@ -439,6 +439,112 @@ class GraphWizzard(ttk.Frame):
         house_prices = np.random.normal(200000, 25000, 5000)
         plt.hist(house_prices, 50)
         plt.show()
+
+
+class SearchForRecords(ttk.Frame):
+    def __init__(self, container, controller, **kwargs):
+        super().__init__(container, **kwargs)
+        self.conn = ConnectionConfig().connection()
+        self.c = self.conn.cursor()
+        self.conn.autocommit(True)
+
+        to_main_button = ttk.Button(self, text="Powrót do strony głównej",
+                                command=lambda: controller.show_frame(MainWindow))
+        to_main_button.grid(column=4, row=8, sticky="EW")
+
+        self.records = tk.StringVar()
+        self.print_records2 = ''
+        self.name_pol_search = tk.StringVar()
+        self.name_ang_search = tk.StringVar()
+        self.space_group_search = tk.StringVar()
+        self.crystal_system_search = tk.StringVar()
+
+        search_name_pol_label = ttk.Label(self, text="wyszukaj po nazwie polskiej")
+        search_name_pol_entry = ttk.Entry(self, textvariable=self.name_pol_search)
+        search_name_pol_button = ttk.Button(self, text="Znajdź nazwę", command=self.searchNamePol)
+        search_name_pol_label.grid(column=0, row=0)
+        search_name_pol_entry.grid(column=0, row=1)
+        search_name_pol_button.grid(column=0, row=2)
+
+        search_name_ang_label = ttk.Label(self, text="wyszukaj po nazwie angielskiej")
+        search_name_ang_entry = ttk.Entry(self, textvariable=self.name_ang_search)
+        search_name_ang_button = ttk.Button(self, text="Znajdź nazwę", command=self.searchNameAng)
+        search_name_ang_label.grid(column=1, row=0)
+        search_name_ang_entry.grid(column=1, row=1)
+        search_name_ang_button.grid(column=1, row=2)
+
+        search_space_group_label = ttk.Label(self, text="wyszukaj wg grupy przestrzennej")
+        search_space_group_entry = ttk.Entry(self, textvariable=self.space_group_search)
+        search_space_group_button = ttk.Button(self, text="Znajdź grupę", command=self.searchSpaceGroup)
+        search_space_group_label.grid(column=2, row=0)
+        search_space_group_entry.grid(column=2, row=1)
+        search_space_group_button.grid(column=2, row=2)
+
+        search_crystal_system_label = ttk.Label(self, text="wyszukaj wg układu krystalograficznego")
+        search_crystal_system_entry = ttk.Entry(self, textvariable=self.crystal_system_search)
+        search_crystal_system_button = ttk.Button(self, text="Znajdź układ", command=self.searchCrystalSystem)
+        search_crystal_system_label.grid(column=3, row=0)
+        search_crystal_system_entry.grid(column=3, row=1)
+        search_crystal_system_button.grid(column=3, row=2)
+
+        records_display2 = ttk.Label(self, textvariable=self.records)
+        records_display2.grid(column=0, row=5)
+
+    def searchNamePol(self):
+        self.c.execute("""Select id , name_pol, name_ang, formula,crystal_system, space_group 
+        FROM minerals_list_vials WHERE name_pol = %s""",
+                       (self.name_pol_search.get()))
+        self.records = self.c.fetchall()  #
+        print(self.records)
+
+        for record in self.records:
+            self.print_records2 += str(record) + "\n"
+
+        query_label = ttk.Label(self, text=self.print_records2)
+        query_label.grid(column=0, row=5)
+        self.conn.close()
+
+    def searchNameAng(self):
+        self.c.execute("""Select id , name_pol, name_ang, formula, crystal_system, space_group 
+                FROM minerals_list_vials WHERE name_ang = %s""",
+                       (self.name_ang_search.get()))
+        self.records = self.c.fetchall()  #
+        print(self.records)
+
+        for record in self.records:
+            self.print_records2 += str(record) + "\n"
+
+        query_label = ttk.Label(self, text=self.print_records2)
+        query_label.grid(column=0, row=5)
+        self.conn.close()
+
+    def searchSpaceGroup(self):
+        self.c.execute("""Select id , name_pol, name_ang, formula, crystal_system, space_group 
+                FROM minerals_list_vials WHERE space_group = %s""",
+                       (self.space_group_search.get()))
+        self.records = self.c.fetchall()  #
+        print(self.records)
+
+        for record in self.records:
+            self.print_records2 += str(record) + "\n"
+
+        query_label = ttk.Label(self, text=self.print_records2)
+        query_label.grid(column=0, row=5)
+        self.conn.close()
+
+    def searchCrystalSystem(self):
+        self.c.execute("""Select id , name_pol, name_ang, formula,crystal_system, space_group 
+                FROM minerals_list_vials WHERE crystal_system = %s""",
+                       (self.crystal_system_search.get()))
+        self.records = self.c.fetchall()  #
+        print(self.records)
+
+        for record in self.records:
+            self.print_records2 += str(record) + "\n"
+
+        query_label = ttk.Label(self, text=self.print_records2)
+        query_label.grid(column=0, row=5)
+        self.conn.close()
 
 # CRM - Customer Ralationship Management
 
