@@ -7,6 +7,7 @@ class ConnectionConfig:
         self.conn = pymysql.connect("sql7.freemysqlhosting.net", user, password, "sql7339614")
         if self.conn:
             print("...connected with database...")
+
         else:
             print("Attention. Connection failed.")
         return self.conn

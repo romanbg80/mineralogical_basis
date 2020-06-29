@@ -9,12 +9,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-class MineralogicalBasis(tk.Tk):
+
+class MineralogicalBasis(tk.Tk, ConnectionConfig):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title("Mineralogical basis")
 
-        #self.conn = ConnectionConfig().connection()
+
+        self.conn = ConnectionConfig().connection()
         #self.c = self.conn.cursor()
         #self.conn.autocommit(True)
 
@@ -25,7 +27,7 @@ class MineralogicalBasis(tk.Tk):
 
         for FrameClass in (MainWindow, Options, ShowDatabase, DeleteRecord, ImproveRecord, GraphWizzard,
                            SearchForRecords):
-            frame = FrameClass(container, self)
+            frame = FrameClass(container, self, self.conn)
             self.frames[FrameClass] = frame
             frame.grid(row=0, column=0, sticky="NSEW")
 
@@ -39,8 +41,10 @@ class MineralogicalBasis(tk.Tk):
 
 
 class MainWindow(ttk.Frame):
-    def __init__(self, container, controller, **kwargs):
+    def __init__(self, container, controller, conn, **kwargs):
         super().__init__(container, **kwargs)
+        self.conn = conn
+        self.c = self.conn.cursor()
 
         self.username = tk.StringVar()
         self.userpassword = tk.StringVar()
@@ -57,7 +61,7 @@ class MainWindow(ttk.Frame):
                                        command=lambda: controller.show_frame(DeleteRecord))
         improve_record_button = ttk.Button(self, text="Popraw wpis w bazie",
                                            command=lambda: controller.show_frame(ImproveRecord))
-        quit_button = ttk.Button(self, text="Wyjdź z aplikacji", command=self.quit)         # quit "a nie" destroy
+        quit_button = ttk.Button(self, text="Wyjdź z aplikacji", command=self.quitWindow)         # quit "a nie" destroy
         graphs_button = ttk.Button(self, text="Rysowanie wykresów", command=lambda: controller.show_frame(GraphWizzard))
         search_button = ttk.Button(self, text="Wyszukaj w bazie", command=lambda: controller.show_frame(SearchForRecords))
 
@@ -94,13 +98,20 @@ class MainWindow(ttk.Frame):
     def show_options(self):
         print("przycisk podłączony do funkcji")
 
+    def quitWindow(self):
+        # self.conn.close()
+        self.quit()
 
-class Options(ttk.Frame):
-    def __init__(self, container, controller, **kwargs):
+
+
+class Options(ttk.Frame, ConnectionConfig):
+    def __init__(self, container, controller, conn, **kwargs):
         super().__init__(container, **kwargs)
-        self.conn = ConnectionConfig().connection()
+        self.conn = conn
         self.c = self.conn.cursor()
-        self.conn.autocommit(True)
+        #self.conn = ConnectionConfig().connection()
+        #self.c = self.conn.cursor()
+        #self.conn.autocommit(True)
 
         self.nazwa_pol = tk.StringVar()
         self.nazwa_ang = tk.StringVar()
@@ -187,15 +198,17 @@ class Options(ttk.Frame):
                         self.system.get(), self.a_axis.get(), self.b_axis.get(), self.c_axis.get(),
                         self.alpha.get(), self.beta.get(), self.gamma.get(), self.z_number.get(), self.code.get()))
 
-        self.conn.close()
+        # self.conn.close()
 
 
-class ShowDatabase(ttk.Frame):
-    def __init__(self, container, controller, **kwargs):
+class ShowDatabase(ttk.Frame, ConnectionConfig):
+    def __init__(self, container, controller, conn, **kwargs):
         super().__init__(container, **kwargs)
-        self.conn = ConnectionConfig().connection()
+        self.conn = conn
         self.c = self.conn.cursor()
-        self.conn.autocommit(True)
+        #self.conn = ConnectionConfig().connection()
+        #self.c = self.conn.cursor()
+        #self.conn.autocommit(True)
 
         self.records = tk.StringVar()
 
@@ -220,15 +233,17 @@ class ShowDatabase(ttk.Frame):
         query_label = ttk.Label(self, text=self.print_records)
         query_label.grid(column=0, row=3)
 
-        self.conn.close()
+        # self.conn.close()
 
 
-class DeleteRecord(ttk.Frame):
-    def __init__(self, container, controller, **kwargs):
+class DeleteRecord(ttk.Frame, ConnectionConfig):
+    def __init__(self, container, controller, conn, **kwargs):
         super().__init__(container, **kwargs)
-        self.conn = ConnectionConfig().connection()
+        self.conn = conn
         self.c = self.conn.cursor()
-        self.conn.autocommit(True)
+        #self.conn = ConnectionConfig().connection()
+        #self.c = self.conn.cursor()
+        #self.conn.autocommit(True)
 
         self.id_to_delete = tk.StringVar()
 
@@ -246,18 +261,20 @@ class DeleteRecord(ttk.Frame):
     def deleteRecord(self):
 
         self.c.execute("DELETE from minerals_list_vials WHERE id= %s", (self.id_to_delete.get()))
-        self.conn.close()
+        # self.conn.close()
         # showinfo, showwarning, showerror, askquestion, askokcancel, askyesno
 
         messagebox.showwarning("Usunięcie wpisu z bazy danych", "Wpis o podanym Id został usuniety")
 
 
-class ImproveRecord(ttk.Frame):
-    def __init__(self, container, controller, **kwargs):
+class ImproveRecord(ttk.Frame, ConnectionConfig):
+    def __init__(self, container, controller, conn, **kwargs):
         super().__init__(container, **kwargs)
-        self.conn = ConnectionConfig().connection()
+        self.conn = conn
         self.c = self.conn.cursor()
-        self.conn.autocommit(True)
+        #self.conn = ConnectionConfig().connection()
+        #self.c = self.conn.cursor()
+        #self.conn.autocommit(True)
 
         self.id_to_improve = tk.StringVar()
         self.nazwa_pol_edit = tk.StringVar()
@@ -363,7 +380,7 @@ class ImproveRecord(ttk.Frame):
             self.gamma_entry_edit.insert(0, record[11])
             self.z_number_entry_edit.insert(0, record[12])
             self.code_entry_edit.insert(0, record[13])
-        self.conn.close()
+        # self.conn.close()
 
     def improveRecord(self):
         self.c.execute("""UPDATE minerals_list_vials SET (name_pol = %s, name_ang = %s, formula = %s,
@@ -373,12 +390,14 @@ class ImproveRecord(ttk.Frame):
                         self.group_edit.get(), self.system_edit.get(), self.a_axis_edit.get(), self.b_axis_edit.get(),
                         self.c_axis_edit.get(), self.alpha_edit.get(), self.beta_edit.get(), self.gamma_edit.get(),
                         self.z_number_edit.get(), self.code_edit.get(), self.id_to_improve.get()))
-        self.conn.close()
+        # self.conn.close()
 
 
 class GraphWizzard(ttk.Frame):
-    def __init__(self, container, controller, **kwargs):
+    def __init__(self, container, controller, conn, **kwargs):
         super().__init__(container, **kwargs)
+        self.conn = conn
+        self.c = self.conn.cursor()
 
         self.pressure_value = tk.StringVar()
 
@@ -413,8 +432,9 @@ class GraphWizzard(ttk.Frame):
                            names=["nanometers", "intensity"])
         print(data.head())
         data.plot(kind='scatter', x='nanometers', y='intensity', color='blue')
-        #plt.xlim([680, 710])   #limit chyba nie działa
-        #plt.show()
+
+        plt.xlim(680., 710.)   #limit chyba nie działa
+
         # plt.savefig("pressure.png")
 
         er_one = data[data['intensity'] == data['intensity'].max()]
@@ -424,8 +444,9 @@ class GraphWizzard(ttk.Frame):
         print(self.er_two[0])
         self.data_source = float(self.er_two[0])
         #print(self.data_source.type())
+        plt.show()
 
-        return self.data_source
+        #return self.data_source
 
     def calibration_equation(self):
         const_a = 1876.0
@@ -441,12 +462,14 @@ class GraphWizzard(ttk.Frame):
         plt.show()
 
 
-class SearchForRecords(ttk.Frame):
-    def __init__(self, container, controller, **kwargs):
+class SearchForRecords(ttk.Frame, ConnectionConfig):
+    def __init__(self, container, controller, conn, **kwargs):
         super().__init__(container, **kwargs)
-        self.conn = ConnectionConfig().connection()
+        self.conn = conn
         self.c = self.conn.cursor()
-        self.conn.autocommit(True)
+        #self.conn = ConnectionConfig().connection()
+        #self.c = self.conn.cursor()
+        #self.conn.autocommit(True)
 
         to_main_button = ttk.Button(self, text="Powrót do strony głównej",
                                 command=lambda: controller.show_frame(MainWindow))
@@ -502,7 +525,7 @@ class SearchForRecords(ttk.Frame):
 
         query_label = ttk.Label(self, text=self.print_records2)
         query_label.grid(column=0, row=5)
-        self.conn.close()
+        # self.conn.close()
 
     def searchNameAng(self):
         self.c.execute("""Select id , name_pol, name_ang, formula, crystal_system, space_group 
@@ -516,7 +539,7 @@ class SearchForRecords(ttk.Frame):
 
         query_label = ttk.Label(self, text=self.print_records2)
         query_label.grid(column=0, row=5)
-        self.conn.close()
+#         #self.conn.close()
 
     def searchSpaceGroup(self):
         self.c.execute("""Select id , name_pol, name_ang, formula, crystal_system, space_group 
@@ -530,7 +553,7 @@ class SearchForRecords(ttk.Frame):
 
         query_label = ttk.Label(self, text=self.print_records2)
         query_label.grid(column=0, row=5)
-        self.conn.close()
+        # self.conn.close()
 
     def searchCrystalSystem(self):
         self.c.execute("""Select id , name_pol, name_ang, formula,crystal_system, space_group 
@@ -544,7 +567,7 @@ class SearchForRecords(ttk.Frame):
 
         query_label = ttk.Label(self, text=self.print_records2)
         query_label.grid(column=0, row=5)
-        self.conn.close()
+        # self.conn.close()
 
 # CRM - Customer Ralationship Management
 
